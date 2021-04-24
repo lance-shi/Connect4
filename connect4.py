@@ -16,14 +16,20 @@ class Board:
 		self.width, self.height = 7, 6
 		self.current_color = 1 #yellow, -1 means red
 		self.game_over = False
-		self.screen = pygame.display.set_mode((self.tile_size * self.width, self.tile_size * (self.height+ 1)))
+		self.screen = pygame.display.set_mode((self.tile_size * self.width + 200, self.tile_size * (self.height+ 1)))
 		pygame.display.set_caption("Connect 4")
 		pygame.mixer.init(44100, -16, 1, 512)
 		pygame.font.init()
 		self.font = pygame.font.SysFont("monospace", 75)
+		self.menu_font = pygame.font.SysFont("arial", 35)
 		self.tiles = np.zeros((self.height, self.width))
 		self.sound_move = pygame.mixer.Sound("sound/move.wav")
 		self.winning_color = "Yellow"
+		self.trace = []
+		self.undo_text = self.menu_font.render("Undo", False, self.colors["GREEN"])
+		self.undo_rect = self.undo_text.get_rect(topleft=(750, 130))
+		self.restart_text = self.menu_font.render("Restart", False, self.colors["GREEN"])
+		self.restart_rect = self.restart_text.get_rect(topleft=(750, 230))
 
 		self.main_loop()
 
@@ -36,22 +42,39 @@ class Board:
 				if event.type == pygame.QUIT:
 					run = False
 				if event.type == pygame.MOUSEBUTTONUP:
-					'''
-					if self.regretRect.collidepoint(event.pos):
-						self.regret()
-					'''
+					if self.undo_rect.collidepoint(event.pos):
+						self.undo()
+					if self.restart_rect.collidepoint(event.pos):
+						self.restart()
 					if not self.game_over:
 						self.get_down(event)
 
 			self.draw_board()
+			self.draw_menu()
 			self.draw_winning()
 			pygame.display.update()
 
 		pygame.quit()
 
+	def undo(self):
+		if len(self.trace) == 0:
+			return
+		latest = self.trace.pop()
+		self.tiles[latest[0]][latest[1]] = 0
+		if not self.game_over:
+			self.current_color = -self.current_color
+		self.game_over = False
+		
+
+	def restart(self):
+		self.game_over = False
+		self.tiles = np.zeros((self.height, self.width))
+		self.current_color = 1
+		self.trace = []
+
 	def draw_board(self):
-		self.screen.fill(self.colors["BLUE"])
-		pygame.draw.rect(self.screen, self.colors["BLACK"], (0, 0, self.width * self.tile_size, self.tile_size))
+		self.screen.fill(self.colors["BLACK"])
+		pygame.draw.rect(self.screen, self.colors["BLUE"], (0, self.tile_size, self.width * self.tile_size, self.height * self.tile_size))
 		for i in range(self.height):
 			for j in range(self.width):
 				color = self.colors["BLACK"]
@@ -61,6 +84,10 @@ class Board:
 					color = self.colors["RED"]
 				pygame.draw.circle(self.screen, color, (int(j*self.tile_size+self.tile_size/2), 
 					int((i+1)*self.tile_size+self.tile_size/2)), self.radius)
+
+	def draw_menu(self):
+		self.screen.blit(self.undo_text, self.undo_rect)
+		self.screen.blit(self.restart_text, self.restart_rect)
 
 	def get_down(self, event):
 		x = event.dict['pos'][0]
@@ -75,6 +102,7 @@ class Board:
 			line -= 1
 
 		if line >= 0:
+			self.trace.append([line, column, self.current_color])
 			if self.judge_winning(self.current_color, line, column):
 				self.game_over = True
 				if self.current_color == 1:
