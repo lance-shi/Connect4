@@ -148,7 +148,6 @@ class Board:
 		return valid_spots
 
 	def ai_play(self):
-		pygame.time.wait(5000)
 		line, col, minimax_score = self.minimax(self.tiles, 5, -math.inf, math.inf, True)
 		if line != None:
 			self.ai_drop(line, col)
