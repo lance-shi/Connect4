@@ -57,6 +57,9 @@ class Board:
 			self.draw_board()
 			self.draw_menu()
 			self.draw_winning()
+
+			if not self.player_turn and not self.game_over:
+				self.ai_play()
 			pygame.display.update()
 
 		pygame.quit()
@@ -69,7 +72,6 @@ class Board:
 		if not self.game_over:
 			self.current_color = -self.current_color
 		self.game_over = False
-		
 
 	def restart(self):
 		self.game_over = False
@@ -103,8 +105,10 @@ class Board:
 		line = self.get_available_slot(self.tiles, column)
 
 		if line >= 0:
+			self.tiles[line][column] = self.current_color
 			self.drop_piece(self.tiles, line, column, self.current_color)
 			self.trace.append([line, column, self.current_color])
+			self.print_board()
 			if self.judge_winning(self.tiles, self.current_color, line, column):
 				self.game_over = True
 				self.winning_wording = "You win!"
@@ -113,7 +117,9 @@ class Board:
 				self.sound_move.play()
 				self.player_turn = False
 				self.is_board_full()
-				self.ai_play()
+
+	def print_board(self):
+		print(np.flip(self.tiles, 0))
 
 	def drop_piece(self, cur_board, line, column, color):
 		cur_board[line][column] = color
@@ -142,6 +148,7 @@ class Board:
 		return valid_spots
 
 	def ai_play(self):
+		pygame.time.wait(5000)
 		line, col, minimax_score = self.minimax(self.tiles, 5, -math.inf, math.inf, True)
 		if line != None:
 			self.ai_drop(line, col)
